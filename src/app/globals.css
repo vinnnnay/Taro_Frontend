@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/* Design tokens. Defined once so light and dark stay in step and nothing
+   hard-codes a hex value at the call site. */
+@theme {
+  --color-ink: #0f1419;
+  --color-ink-soft: #4a5560;
+  --color-ink-faint: #7b8794;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f7f8fa;
+  --color-border: #e3e6ea;
+  --color-accent: #2f6f4e;
+  --color-accent-soft: #e8f2ec;
+  --color-warn: #8a5a00;
+  --color-warn-soft: #fdf3e0;
+  --color-danger: #a13333;
+  --color-danger-soft: #fbeceb;
+}
+
+:root {
+  color-scheme: light;
+  --ink: var(--color-ink);
+  --ink-soft: var(--color-ink-soft);
+  --ink-faint: var(--color-ink-faint);
+  --surface: var(--color-surface);
+  --surface-raised: var(--color-surface-raised);
+  --border: var(--color-border);
+  --accent: var(--color-accent);
+  --accent-soft: var(--color-accent-soft);
+  --warn: var(--color-warn);
+  --warn-soft: var(--color-warn-soft);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ink: #e8ebee;
+    --ink-soft: #a8b2bd;
+    --ink-faint: #76818d;
+    --surface: #14181d;
+    --surface-raised: #1b2027;
+    --border: #2a313a;
+    --accent: #6fbf95;
+    --accent-soft: #1a2b22;
+    --warn: #d9a441;
+    --warn-soft: #2b2417;
+    --danger: #e08a84;
+    --danger-soft: #2d1c1b;
+  }
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus everywhere. The brief asks for keyboard navigability, and a
+   focus ring you cannot see is the fastest way to fail that. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Respect a user's motion preference rather than animating regardless. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes pulse-soft { 0%, 100% { opacity: 1 } 50% { opacity: 0.45 } }
+.animate-pulse-soft { animation: pulse-soft 1.6s ease-in-out infinite; }
+
+/* Skip link: hidden until focused. */
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 50;
+  background: var(--surface); color: var(--ink);
+  padding: 0.65rem 1rem; border: 1px solid var(--border); border-radius: 0 0 6px 0;
+}
+.skip-link:focus { left: 0; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; color: #000; }
+}
