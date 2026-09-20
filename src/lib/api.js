@@ -72,5 +72,6 @@ export const api = {
   regenerate: (id, body) => call(`/api/kits/${id}/regenerate`, { method: 'POST', body }),
 
   getPractice: (id) => call(`/api/kits/${id}/practice`),
+  getInsights: (id, signal) => call(`/api/kits/${id}/insights`, { signal }),
   recordPractice: (id, cardId, confidence) => call(`/api/kits/${id}/practice`, { method: 'POST', body: { cardId, confidence } }),
 };

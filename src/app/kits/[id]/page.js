@@ -1,7 +1,6 @@
 'use client';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { computeWeakSpots } from '@kit/core/insights';
 import { api } from '@/lib/api';
 import { useKit, useKitStatus } from '@/lib/useKit';
 import { Header } from '@/components/Header';
@@ -23,7 +22,7 @@ export default function KitPage({ params }) {
   const [tab, setTab] = useState('overview');
   const [toast, setToast] = useState(null);
   const [regenerating, setRegenerating] = useState(null);
-  const [practice, setPractice] = useState({});
+  const [insights, setInsights] = useState(null);
 
   const generating = doc && (doc.status === 'pending' || doc.status === 'running');
   const status = useKitStatus(id, generating);
@@ -34,9 +33,14 @@ export default function KitPage({ params }) {
     if (status?.status === 'failed') api.getKit(id).then((r) => adopt(r.kit)).catch(() => {});
   }, [status?.status, id, adopt]);
 
+  // Weak spots are computed server-side from persisted practice records, so
+  // they are refetched whenever the kit itself changes.
   useEffect(() => {
-    if (doc?.status === 'ready') api.getPractice(id).then((r) => setPractice(r.practice ?? {})).catch(() => {});
-  }, [doc?.status, id]);
+    if (doc?.status !== 'ready') return;
+    const ac = new AbortController();
+    api.getInsights(id, ac.signal).then(setInsights).catch(() => {});
+    return () => ac.abort();
+  }, [doc?.status, doc?.rev, id]);
 
   useEffect(() => { if (conflict) setToast({ message: 'This kit changed elsewhere — your view has been refreshed.', tone: 'warn' }); }, [conflict]);
 
@@ -88,7 +92,7 @@ export default function KitPage({ params }) {
     } finally { setRegenerating(null); }
   }, [id, doc?.rev, adopt]);
 
-  const weakReport = useMemo(() => (kit ? computeWeakSpots(kit, practice) : null), [kit, practice]);
+  const weakReport = insights?.weakSpots ?? null;
 
   if (loading) return <><Header /><main id="main" className="mx-auto max-w-5xl px-4 py-8"><Skeleton rows={4} /></main></>;
   if (error && !kit) return <><Header /><main id="main" className="mx-auto max-w-5xl px-4 py-8"><ErrorState error={error} /></main></>;
@@ -181,7 +185,9 @@ export default function KitPage({ params }) {
           {tab === 'schedule' && <SchedulePanel schedule={kit.schedule} questions={kit.questions}
             onRegenerate={() => regenerate('schedule')} regenerating={regenerating === 'schedule'} />}
 
-          {tab === 'weak' && weakReport && <WeakSpots report={weakReport} />}
+          {tab === 'weak' && (weakReport
+            ? <WeakSpots report={weakReport} />
+            : <Skeleton rows={3} />)}
         </div>
       </main>
 

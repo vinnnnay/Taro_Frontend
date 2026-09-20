@@ -1,7 +1,6 @@
 'use client';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { orderPracticeQueue } from '@kit/core/insights';
 import { api } from '@/lib/api';
 import { Header } from '@/components/Header';
 import { Badge, Button, Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
@@ -35,17 +34,30 @@ export default function PracticePage({ params }) {
   const [revealed, setRevealed] = useState(false);
   const [sessionDone, setSessionDone] = useState([]);
 
+  const [order, setOrder] = useState(null);
+
+  // The order is computed server-side and fetched ONCE for the session. A queue
+  // that reshuffles under the user after every answer is disorienting, so the
+  // answers are recorded but the order is not recomputed mid-session.
   useEffect(() => {
-    Promise.all([api.getKit(id), api.getPractice(id)])
-      .then(([k, p]) => { setKit(k.kit.kit); setPractice(p.practice ?? {}); })
+    Promise.all([api.getKit(id), api.getInsights(id)])
+      .then(([k, ins]) => {
+        setKit(k.kit.kit);
+        setPractice(ins.practice ?? {});
+        setOrder(ins.practiceOrder ?? []);
+      })
       .catch(setError);
   }, [id]);
 
-  // The queue is computed once per session, not after every answer -- a queue
-  // that reshuffles under the user mid-session is disorienting.
-  const queue = useMemo(() => (kit ? orderPracticeQueue(kit.flashcards, practice) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [kit]);
+  const queue = useMemo(() => {
+    if (!kit) return [];
+    if (!order) return [];
+    const byId = new Map(kit.flashcards.map((c) => [c.id, c]));
+    const ordered = order.map((cid) => byId.get(cid)).filter(Boolean);
+    // Anything the server did not mention (a card added since) still gets shown.
+    for (const c of kit.flashcards) if (!order.includes(c.id)) ordered.push(c);
+    return ordered;
+  }, [kit, order]);
 
   const card = queue[index];
 
@@ -74,7 +86,7 @@ export default function PracticePage({ params }) {
   }, [card, revealed, record]);
 
   if (error) return <><Header /><main id="main" className="mx-auto max-w-2xl px-4 py-8"><ErrorState error={error} /></main></>;
-  if (!kit) return <><Header /><main id="main" className="mx-auto max-w-2xl px-4 py-8"><Skeleton rows={2} /></main></>;
+  if (!kit || !order) return <><Header /><main id="main" className="mx-auto max-w-2xl px-4 py-8"><Skeleton rows={2} /></main></>;
 
   const reviewedEver = Object.values(practice).filter((p) => p?.reviews).length;
 
