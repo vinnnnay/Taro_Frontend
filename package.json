@@ -1,5 +1,5 @@
 {
-  "name": "@kit/web",
+  "name": "interview-prep-kit-web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -17,5 +17,6 @@
     "@tailwindcss/postcss": "^4.0.0",
     "tailwindcss": "^4.0.0",
     "postcss": "^8.4.49"
-  }
+  },
+  "description": "Frontend for the AI Interview Prep Kit. Talks to the API over HTTP; no shared packages."
 }
